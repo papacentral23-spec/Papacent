@@ -1,0 +1,75 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>SIRDIO STUDIO PRO</title><style>
+*{box-sizing:border-box;touch-action:manipulation}
+body{margin:0;background:#1a0f08;color:#f5e6c8;font-family:monospace;padding-bottom:90px;overflow-x:hidden}
+.top{padding:10px;background:#000;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B9FF00;position:sticky;top:0;z-index:50}
+.light{width:18px;height:18px;border-radius:50%;background:#333}
+.light.on{background:red;box-shadow:0 0 20px red;animation:blink.5s infinite}
+@keyframes blink{50%{opacity:.3}}
+.console{background:#21160e;padding:10px;border:2px solid #4a3522;border-radius:14px;margin:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.faders{display:flex;gap:8px;min-width:max-content}
+.chan{width:64px;text-align:center;background:#0f0f0f;border-radius:8px;padding:5px 4px;border:1px solid #2a1f14;flex-shrink:0}
+.fader{height:110px;width:36px;background:linear-gradient(#111,#000);border-radius:6px;margin:6px auto;position:relative;border:1px solid #444;overflow:hidden}
+.fader-track{position:absolute;left:50%;top:8px;bottom:8px;width:3px;background:#222;transform:translateX(-50%)}
+.fader-cap{position:absolute;left:2px;right:2px;height:22px;background:linear-gradient(#ddd,#888);border-radius:3px;border:1px solid #000;cursor:grab;box-shadow:0 2px 6px #000;touch-action:none;display:flex;align-items:center;justify-content:center}
+.fader-cap:active{cursor:grabbing;background:#B9FF00}
+.fader-cap::after{content:'|||';font-size:8px;color:#000}
+.knob{width:28px;height:28px;background:radial-gradient(#999,#333);border-radius:50%;margin:6px auto;border:2px solid #000;position:relative;cursor:pointer}
+.knob-dot{position:absolute;top:2px;left:50%;width:4px;height:8px;background:#B9FF00;border-radius:2px;transform:translateX(-50%)}
+.label{font-size:8px;font-weight:900;line-height:10px}
+.btn{background:#B9FF00;color:#000;padding:7px 10px;border-radius:99px;border:0;font-weight:900;font-size:10px;cursor:pointer;display:inline-block;margin-top:4px}
+.btn:active{transform:scale(0.95)}
+.card{background:#0f0f0f;border-radius:12px;padding:10px;margin:8px;border:1px solid #333}
+.playbar{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:3px solid #B9FF00;padding:10px 12px;display:flex;gap:12px;align-items:center;z-index:100}
+.playbtn{width:48px;height:48px;border-radius:50%;background:#B9FF00;border:0;font-size:20px;font-weight:900;flex-shrink:0;cursor:pointer}
+</style></head><body>
+<div class=top><div>● SIRDIO STUDIO PRO</div><div style="display:flex;gap:6px;align-items:center"><span id=t style="font-size:12px">00:00:00</span><div id=airlight class=light></div><span style="color:red;font-weight:900;font-size:11px">ON AIR</span></div></div>
+
+<div id=guestAlert style="background:red;color:#fff;padding:12px;border-radius:8px;margin:8px;display:none;text-align:center;font-weight:900;position:sticky;top:44px;z-index:40">🔴 GUEST WANTS AIR - TAP ALLOW<button class=btn style="margin-left:8px;background:#fff" onclick="allowGuest()">ALLOW NOW</button></div>
+
+<div class=console>
+<div style="color:#B9FF00;font-size:10px;margin-bottom:8px">DRAG FADER UP/DOWN • TAP KNOB TO MUTE • 8 CH ABBEY ROAD</div>
+<div class=faders>
+<div class=chan><div style="font-size:7px;color:#B9FF00">-0dB</div><div class=fader data-ch="0"><div class=fader-track></div><div class=fader-cap style="bottom:30px"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>HOST MIC</div><div class=label id=v0 style="color:#B9FF00">0dB</div></div>
+<div class=chan><div style="font-size:7px;color:#888">-6dB</div><div class=fader data-ch="1"><div class=fader-track></div><div class=fader-cap style="bottom:55px;background:linear-gradient(#eee,#999)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>GUEST</div><button class=btn onclick="allowGuest()">ALLOW MIC</button></div>
+<div class=chan><div style="font-size:7px;color:#f80">-12dB</div><div class=fader data-ch="2"><div class=fader-track></div><div class=fader-cap style="bottom:20px;background:linear-gradient(#ffb86c,#ff8800)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>RODE PRO</div><div class=label style="color:#f80">● OFF</div></div>
+<div class=chan><div style="font-size:7px;color:#0f8">-3dB</div><div class=fader data-ch="3"><div class=fader-track></div><div class=fader-cap style="bottom:45px;background:linear-gradient(#7fffc7,#00ff88)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>MUSIC</div><div class=label>PLAYING</div></div>
+<div class=chan><div style="font-size:7px;color:#fff">-8dB</div><div class=fader data-ch="4"><div class=fader-track></div><div class=fader-cap style="bottom:65px;background:linear-gradient(#fff,#ccc)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>PHONE</div><div class=label>CALL</div></div>
+<div class=chan><div style="font-size:7px;color:#f0f">-10dB</div><div class=fader data-ch="5"><div class=fader-track></div><div class=fader-cap style="bottom:25px;background:linear-gradient(#ff9cff,#ff00ff)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>SFX</div><div class=label>JINGLE</div></div>
+<div class=chan><div style="font-size:7px;color:#0af">-5dB</div><div class=fader data-ch="6"><div class=fader-track></div><div class=fader-cap style="bottom:40px;background:linear-gradient(#7fd8ff,#00aaff)"></div></div><div class=knob onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>AUX</div><div class=label>BT</div></div>
+<div class=chan style="border-color:#B9FF00;border-width:2px"><div style="font-size:7px;color:#B9FF00">0dB</div><div class=fader data-ch="7"><div class=fader-track></div><div class=fader-cap style="bottom:85px;background:linear-gradient(#eaff00,#B9FF00)"></div></div><div class=knob style="border-color:#B9FF00" onclick="toggleMute(this)"><div class=knob-dot></div></div><div class=label>MASTER</div><div class=label style="color:#B9FF00" id=vm>● LIVE</div></div>
+</div>
+</div>
+
+<div class=card>
+<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;color:#B9FF00;font-size:13px">🎵 PLAYLIST - REAL MP3</h3><label class=btn style="padding:8px 12px;font-size:12px;cursor:pointer">📁 Add MP3<input id=mp3input type=file accept="audio/*,audio/mp3,.mp3" multiple hidden></label></div>
+<div id=pl style="margin-top:10px"></div>
+</div>
+
+<div class=playbar><button id=playBtn class=playbtn>▶</button><div style="flex:1;min-width:0"><div id=nowp style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No track - Add MP3</div><div style="font-size:10px;opacity:.6">Tap song • Drag faders • Works 100%</div></div><div style="font-size:10px;opacity:.5" id=volDisp>VOL 100%</div><audio id=aud preload="metadata"></audio></div>
+
+<script>
+let aud=document.getElementById('aud'); let nowp=document.getElementById('nowp'); let playBtn=document.getElementById('playBtn'); let tracks=[]; let cur=-1;
+function render(){document.getElementById('pl').innerHTML=tracks.map((t,i)=>`<div style="padding:10px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;background:${i==cur?'#1a1a00':'transparent'};border-radius:6px" onclick="playT(${i})"><span style="font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i+1}. ${t.name} ${i==cur?' 🔊':''}</span><span style="display:flex;gap:8px;align-items:center"><span style="background:#222;padding:3px 6px;border-radius:6px;font-size:9px">${t.size}</span><span onclick="event.stopPropagation();tracks.splice(${i},1);if(cur==i)cur=-1;render()" style="color:red;padding:4px 8px;background:#222;border-radius:6px">✕</span></span></div>`).join('')||'<div style="padding:20px;text-align:center;opacity:.5;font-size:12px">No MP3 yet - Tap Add MP3</div>'}
+function playT(i){cur=i;tracks.forEach((x,idx)=>x.playing=idx==i);if(tracks[i].url){aud.src=tracks[i].url;aud.play().then(()=>{playBtn.textContent='⏸'}).catch(()=>{nowp.textContent='Tap play to start'});nowp.textContent=tracks[i].name;render()}}
+playBtn.onclick=()=>{if(!aud.src&&tracks.length)playT(0);if(aud.paused){aud.play();playBtn.textContent='⏸'}else{aud.pause();playBtn.textContent='▶'}};
+aud.onended=()=>{if(cur+1<tracks.length)playT(cur+1)};aud.onplay=()=>playBtn.textContent='⏸';aud.onpause=()=>playBtn.textContent='▶';
+document.getElementById('mp3input').onchange=e=>{for(let f of e.target.files){let url=URL.createObjectURL(f);tracks.push({name:f.name,size:(f.size/1024/1024).toFixed(1)+'MB',url})}render();if(tracks.length==e.target.files.length)playT(0);e.target.value=''};
+setInterval(()=>{document.getElementById('t').textContent=new Date().toLocaleTimeString()},1000);
+
+// REAL DRAGGABLE FADERS - TOUCH + MOUSE
+document.querySelectorAll('.fader-cap').forEach(cap=>{
+ let fader=cap.parentElement; let dragging=false; let startY=0; let startBottom=0;
+ function getBottom(){return parseFloat(cap.style.bottom)||0}
+ function onMove(e){if(!dragging)return;let y=(e.touches?e.touches[0].clientY:e.clientY);let delta=startY-y;let newB=Math.min(fader.clientHeight-24,Math.max(0,startBottom+delta));cap.style.bottom=newB+'px';let ch=fader.dataset.ch;let vol=Math.round((newB/(fader.clientHeight-24))*100);if(ch=='7'){aud.volume=vol/100;document.getElementById('volDisp').textContent='VOL '+vol+'%';document.getElementById('vm').textContent=vol+'%';}else{let lab=document.getElementById('v'+ch);if(lab)lab.textContent=vol>90?'0dB':(vol>50?'-'+(100-vol)/5+'dB':'-∞');}}
+ function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);startBottom=getBottom();cap.setPointerCapture&&cap.setPointerCapture(e.pointerId);e.preventDefault()}
+ function onEnd(){dragging=false}
+ cap.addEventListener('touchstart',onStart,{passive:false}); cap.addEventListener('mousedown',onStart);
+ window.addEventListener('touchmove',onMove,{passive:false}); window.addEventListener('mousemove',onMove);
+ window.addEventListener('touchend',onEnd); window.addEventListener('mouseup',onEnd);
+ cap.addEventListener('pointerdown',onStart); window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onEnd);
+});
+function toggleMute(knob){let d=knob.querySelector('.knob-dot');let on=d.style.background=='red';d.style.background=on?'#B9FF00':'red';knob.style.opacity=on?'1':'0.4'}
+function allowGuest(){localStorage.setItem('sirdio_guest_allowed','1');localStorage.removeItem('sirdio_guest_want_air');alert('✅ GUEST ALLOWED - RODE PRO ON!');document.getElementById('guestAlert').style.display='none';document.getElementById('airlight').classList.remove('on')}
+setInterval(()=>{if(localStorage.getItem('sirdio_guest_want_air')=='1'){document.getElementById('guestAlert').style.display='block';document.getElementById('airlight').classList.add('on')}else{document.getElementById('guestAlert').style.display='none'}},600);
+render();
+</script></body></html>
