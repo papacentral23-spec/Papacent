@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>SIRDIO STUDIO - Abbey Road</title><style>
+body{margin:0;background:#1a0f08;color:#f5e6c8;font-family:monospace;overflow-x:hidden}
+.top{padding:12px;background:#000;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B9FF00}
+.light{width:22px;height:22px;border-radius:50%;background:#333;box-shadow:0 0 10px #000;transition:0.2s}
+.light.on{background:red;box-shadow:0 0 30px red,0 0 60px red;animation:blink .5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.console{background:linear-gradient(#2a1a0e,#1a0f08);padding:16px;border:2px solid #5a3e2b;border-radius:18px;margin:12px}
+.fader{background:#000;height:120px;width:42px;border-radius:8px;position:relative;border:1px solid #444}
+.knob{width:36px;height:36px;background:radial-gradient(#888,#222);border-radius:50%;margin:8px auto;border:2px solid #000}
+.card{background:#0f0f0f;border-radius:14px;padding:12px;margin:10px 0;border:1px solid #333}
+.btn{background:#B9FF00;color:#000;padding:12px 18px;border-radius:99px;border:0;font-weight:900;cursor:pointer}
+.playlist div{padding:10px;border-bottom:1px solid #222;display:flex;justify-content:space-between}
+.guest-alert{background:red;color:#fff;padding:14px;border-radius:12px;display:none;font-weight:900;animation:blink .7s infinite}
+</style></head><body>
+<div class=top><div>● ABBEY ROAD - SIRDIO STUDIO</div><div style="display:flex;gap:10px;align-items:center"><span id=t>00:00</span><div id=airlight class=light></div><span style=color:red;font-weight:900>ON AIR</span></div></div>
+
+<div id=guestAlert class=guest-alert>🔴 GUEST WANTS AIR - TAP TO ALLOW</div>
+
+<div class=console>
+<h3 style="margin:0 0 10px;color:#B9FF00">ANALOG CONSOLE - Kumasi</h3>
+<div style="display:flex;gap:12px;overflow:auto">
+<div style=text-align:center><div class=fader><div style="position:absolute;bottom:20px;left:5px;right:5px;height:4px;background:#B9FF00"></div></div><small>HOST</small><div class=knob></div></div>
+<div style=text-align:center><div class=fader><div style="position:absolute;bottom:40px;left:5px;right:5px;height:4px;background:#888"></div></div><small>GUEST</small><div class=knob></div><button id=allowBtn class=btn style="font-size:10px;margin-top:6px;padding:6px 8px">ALLOW MIC</button></div>
+<div style=text-align:center><div class=fader></div><small>MUSIC</small><div class=knob></div></div>
+<div style=text-align:center><div class=fader></div><small>MASTER</small><div class=knob></div></div>
+</div>
+</div>
+
+<div style="margin:12px">
+<div class=card><h3 style="margin:0;color:#B9FF00">🎵 PLAYLIST - 24/7</h3><div class=playlist id=pl></div><button class=btn onclick="addTrack()">+ Add Track</button></div>
+<div class=card><h3 style="margin:0">🎙️ GUEST MIC</h3><p style="opacity:.6">Rode Pro - Bottom control</p><div style="background:#000;padding:20px;border-radius:12px;text-align:center"><div style="font-size:50px">🎙️</div><small>Rode NT1 5th Gen - Guest</small><div style="margin-top:10px"><span id=gstatus style="background:#333;padding:4px 10px;border-radius:99px">OFF</span></div></div></div>
+</div>
+
+<script>
+let tracks=["Kumasi Morning Intro","Highlife Mix - 6AM","News Jingle","Shatta Wale - On God","Black Sherif - Soja"];
+function render(){document.getElementById('pl').innerHTML=tracks.map((t,i)=>`<div><span>${i+1}. ${t}</span><span onclick="tracks.splice(${i},1);render()" style="color:red;cursor:pointer">✕</span></div>`).join('')}
+function addTrack(){let n=prompt('Track name:');if(n){tracks.push(n);render()}} render();
+setInterval(()=>{let d=new Date();document.getElementById('t').textContent=d.toLocaleTimeString()},1000);
+let gAlert=document.getElementById('guestAlert'); let light=document.getElementById('airlight'); let gs=document.getElementById('gstatus');
+function checkGuest(){let want=localStorage.getItem('sirdio_guest_want_air');if(want=='1'){gAlert.style.display='block';light.classList.add('on');gs.textContent='WANTS AIR';gs.style.background='red';gs.style.color='#fff'}else{gAlert.style.display='none';light.classList.remove('on');}} setInterval(checkGuest,800);
+document.getElementById('allowBtn').onclick=()=>{localStorage.setItem('sirdio_guest_allowed','1');localStorage.removeItem('sirdio_guest_want_air');alert('GUEST ALLOWED ON AIR!');checkGuest(); gs.textContent='LIVE'; gs.style.background='#B9FF00'; gs.style.color='#000'}; gAlert.onclick=()=>{document.getElementById('allowBtn').click()}
+</script></body></html>
