@@ -1,0 +1,91 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>SIRDIO STUDIO ULTIMATE</title><style>
+*{box-sizing:border-box}body{margin:0;background:#1a0f08;color:#f5e6c8;font-family:monospace;padding-bottom:95px;overflow-x:hidden}
+.top{padding:10px;background:#000;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B9FF00;position:sticky;top:0;z-index:100}
+.light{width:20px;height:20px;border-radius:50%;background:#333;border:2px solid #000}
+.light.on{background:red;box-shadow:0 0 25px red;animation:blink.6s infinite}@keyframes blink{50%{opacity:.2}}
+.console{background:#21160e;padding:8px;border:2px solid #4a3522;border-radius:14px;margin:8px;overflow-x:auto}
+.faders{display:flex;gap:8px;min-width:max-content;padding-bottom:8px}
+.chan{width:68px;text-align:center;background:#0f0f0f;border-radius:10px;padding:6px 4px;border:1px solid #2a1f14;flex-shrink:0;position:relative}
+.chan.host{border:2px solid #B9FF00;background:#1a1a00}
+.fader{height:115px;width:36px;background:linear-gradient(#111,#000);border-radius:6px;margin:6px auto;position:relative;border:1px solid #444}
+.fader-cap{position:absolute;left:2px;right:2px;height:24px;background:linear-gradient(#ddd,#888);border-radius:4px;border:1px solid #000;cursor:grab;box-shadow:0 2px 6px #000;touch-action:none;display:flex;align-items:center;justify-content:center;font-size:9px;color:#000;font-weight:900}
+.pan{width:100%;height:18px;background:#000;border-radius:10px;position:relative;margin:6px 0;border:1px solid #333;overflow:hidden}
+.pan-knob{position:absolute;top:1px;bottom:1px;width:12px;background:#B9FF00;border-radius:50%;left:50%;transform:translateX(-50%);cursor:grab;touch-action:none}
+.knob{width:30px;height:30px;background:radial-gradient(#999,#222);border-radius:50%;margin:4px auto;border:2px solid #000;position:relative;cursor:pointer}
+.knob-dot{position:absolute;top:2px;left:50%;width:4px;height:10px;background:#B9FF00;border-radius:2px;transform:translateX(-50%)}
+.label{font-size:8px;font-weight:900;line-height:10px}
+.btn{background:#B9FF00;color:#000;padding:6px 8px;border-radius:99px;border:0;font-weight:900;font-size:9px;cursor:pointer}
+.btn-live{background:red;color:#fff;padding:10px 18px;font-size:14px;border-radius:99px;border:0;font-weight:900;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.05)}}
+.card{background:#0f0f0f;border-radius:12px;padding:10px;margin:8px;border:1px solid #333}
+.playbar{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:3px solid #B9FF00;padding:10px 12px;display:flex;gap:12px;align-items:center;z-index:100}
+.playbtn{width:50px;height:50px;border-radius:50%;background:#B9FF00;border:0;font-size:22px;font-weight:900;flex-shrink:0}
+</style></head><body>
+<div class=top>
+<div>● SIRDIO ULTIMATE</div>
+<div style="display:flex;gap:8px;align-items:center">
+<span id=t style="font-size:12px">00:00:00</span>
+<div id=airlight class=light></div>
+<button id=goLiveBtn class=btn onclick="toggleLive()" style="background:#333;color:#555">OFF AIR</button>
+</div>
+</div>
+
+<div id=guestAlert style="background:red;color:#fff;padding:10px;border-radius:8px;margin:8px;display:none;text-align:center;font-weight:900;position:sticky;top:48px;z-index:90">🔴 GUEST WANTS AIR<button class=btn style="margin-left:10px;background:#fff" onclick="allowGuest()">ALLOW</button></div>
+
+<div class=console>
+<div style="color:#B9FF00;font-size:10px;margin-bottom:6px;display:flex;justify-content:space-between"><span>DRAG FADER + PAN • TAP KNOB MUTE • 8 CH</span><span id=liveStatus style="color:red">● OFFLINE</span></div>
+<div class=faders>
+
+<div class="chan host"><div style="font-size:7px;color:#B9FF00">HOST MIC LIVE</div><div class=fader data-ch="0"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:60px">0dB</div></div><div class=pan data-pan="0"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,0)"><div class=knob-dot></div></div><div class=label>HOST MIC</div><button class=btn style="width:100%;margin-top:4px;background:#B9FF00" onclick="startHostMic()">🎤 START MIC</button><div class=label id=v0 style="color:#B9FF00">-∞</div></div>
+
+<div class=chan><div style="font-size:7px">GUEST MIC</div><div class=fader data-ch="1"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:50px">GUEST</div></div><div class=pan data-pan="1"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,1)"><div class=knob-dot></div></div><div class=label>GUEST</div><button class=btn onclick="allowGuest()">ALLOW</button></div>
+
+<div class=chan><div style="font-size:7px;color:#f80">RODE PRO</div><div class=fader data-ch="2"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:20px;background:linear-gradient(#ffb86c,#f80)">RODE</div></div><div class=pan data-pan="2"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,2)"><div class=knob-dot></div></div><div class=label>RODE PRO</div></div>
+
+<div class=chan><div style="font-size:7px;color:#0f8">MUSIC</div><div class=fader data-ch="3"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:70px;background:linear-gradient(#7fffc7,#0f8)">MUS</div></div><div class=pan data-pan="3"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,3)"><div class=knob-dot></div></div><div class=label>MUSIC</div></div>
+
+<div class=chan><div style="font-size:7px">PHONE</div><div class=fader data-ch="4"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:65px">PHN</div></div><div class=pan data-pan="4"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,4)"><div class=knob-dot></div></div><div class=label>PHONE CALL</div></div>
+
+<div class=chan><div style="font-size:7px;color:#f0f">SFX</div><div class=fader data-ch="5"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:25px;background:linear-gradient(#ff9cff,#f0f)">SFX</div></div><div class=pan data-pan="5"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,5)"><div class=knob-dot></div></div><div class=label>SFX JINGLE</div></div>
+
+<div class=chan><div style="font-size:7px;color:#0af">AUX</div><div class=fader data-ch="6"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#222;transform:translateX(-50%)"></div><div class=fader-cap style="bottom:40px;background:linear-gradient(#7fd8ff,#0af)">AUX</div></div><div class=pan data-pan="6"><div class=pan-knob></div></div><div class=knob onclick="toggleMute(this,6)"><div class=knob-dot></div></div><div class=label>AUX BT</div></div>
+
+<div class=chan style="border-color:#B9FF00;border-width:2px"><div style="font-size:7px;color:#B9FF00">MASTER</div><div class=fader data-ch="7"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:#B9FF00;transform:translateX(-50%);opacity:.3"></div><div class=fader-cap style="bottom:85px;background:linear-gradient(#eaff00,#B9FF00)">MST</div></div><div class=pan data-pan="7"><div class=pan-knob></div></div><div class=knob style="border-color:#B9FF00" onclick="toggleMute(this,7)"><div class=knob-dot></div></div><div class=label>MASTER</div><div class=label style="color:#B9FF00" id=vm>100%</div></div>
+
+</div>
+</div>
+
+<div class=card>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<h3 style="margin:0;color:#B9FF00;font-size:13px">🎵 NONSTOP PLAYLIST</h3>
+<div style="display:flex;gap:6px;align-items:center">
+<label style="font-size:10px;display:flex;align-items:center;gap:4px"><input id=loopChk type=checkbox checked> LOOP</label>
+<label style="font-size:10px;display:flex;align-items:center;gap:4px"><input id=shuffleChk type=checkbox> SHUFFLE</label>
+<label class=btn style="padding:8px 12px;font-size:12px;cursor:pointer">📁 Add MP3<input id=mp3input type=file accept="audio/*,.mp3" multiple hidden></label>
+</div>
+</div>
+<div id=pl style="margin-top:10px"></div>
+</div>
+
+<div class=playbar><button id=playBtn class=playbtn>▶</button><div style="flex:1;min-width:0"><div id=nowp style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No track - Add MP3 for Nonstop</div><div style="font-size:10px;opacity:.6">Nonstop ON • Auto next • Connected to Listeners</div></div><div style="font-size:10px" id=volDisp>VOL 100%</div><audio id=aud preload="auto" crossorigin="anonymous"></audio></div>
+
+<script>
+let aud=document.getElementById('aud'),nowp=document.getElementById('nowp'),playBtn=document.getElementById('playBtn'),tracks=[],cur=-1,isLive=false,ctx,gains=[],pans=[],hostStream=null;
+function initAudio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();gains=[0,1,2,3,4,5,6,7].map(()=>{let g=ctx.createGain();g.gain.value=0.8;let p=ctx.createStereoPanner();p.pan.value=0;g.connect(p);p.connect(ctx.destination);return {gain:g,pan:p}});let src=ctx.createMediaElementSource(aud);src.connect(gains[3].gain);gains[7].gain.value=1}}
+function render(){document.getElementById('pl').innerHTML=tracks.map((t,i)=>`<div style="padding:10px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;background:${i==cur?'#1a1a00':'transparent'};border-radius:6px" onclick="playT(${i})"><span style="font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i+1}. ${t.name} ${i==cur?' 🔊':''}</span><span style="display:flex;gap:8px"><span style="background:#222;padding:3px 6px;border-radius:6px;font-size:9px">${t.size}</span><span onclick="event.stopPropagation();tracks.splice(${i},1);render()" style="color:red;padding:4px 8px;background:#222;border-radius:6px">✕</span></span></div>`).join('')||'<div style="padding:20px;text-align:center;opacity:.5;font-size:12px">Add MP3 → Nonstop will auto play next</div>'}
+window.playT=function(i){initAudio();cur=i;if(tracks[i].url){aud.src=tracks[i].url;aud.play().then(()=>{playBtn.textContent='⏸';nowp.textContent=tracks[i].name;localStorage.setItem('sirdio_now_playing',tracks[i].name);localStorage.setItem('sirdio_live_data',JSON.stringify({title:tracks[i].name,playing:true}))}).catch(e=>{nowp.textContent='Tap ▶ to play (browser block)'});render()}}
+playBtn.onclick=()=>{initAudio();if(!aud.src&&tracks.length)playT(0);if(aud.paused){aud.play();playBtn.textContent='⏸'}else{aud.pause();playBtn.textContent='▶'}};
+aud.onended=()=>{let loop=document.getElementById('loopChk').checked,shuf=document.getElementById('shuffleChk').checked;if(shuf&&tracks.length>1){let n;do{n=Math.floor(Math.random()*tracks.length)}while(n==cur&&tracks.length>1);playT(n)}else if(cur+1<tracks.length)playT(cur+1);else if(loop&&tracks.length){playT(0)}else{playBtn.textContent='▶';nowp.textContent='Playlist ended - Loop ON for nonstop'}};
+aud.onplay=()=>{playBtn.textContent='⏸';localStorage.setItem('sirdio_is_playing','1')};aud.onpause=()=>{playBtn.textContent='▶';localStorage.setItem('sirdio_is_playing','0')};
+document.getElementById('mp3input').onchange=e=>{initAudio();for(let f of e.target.files){tracks.push({name:f.name,size:(f.size/1024/1024).toFixed(1)+'MB',url:URL.createObjectURL(f)})}render();if(cur==-1&&tracks.length)playT(0);e.target.value=''};
+setInterval(()=>{document.getElementById('t').textContent=new Date().toLocaleTimeString()},1000);
+// FADERS + PANNING REAL
+document.querySelectorAll('.fader-cap').forEach(cap=>{let fader=cap.parentElement,drag=false,sY=0,sB=0;function getB(){return parseFloat(cap.style.bottom)||0}function mv(e){if(!drag)return;let y=(e.touches?e.touches[0].clientY:e.clientY);let d=sY-y;let nb=Math.min(fader.clientHeight-26,Math.max(0,sB+d));cap.style.bottom=nb+'px';let ch=parseInt(fader.dataset.ch);let vol=nb/(fader.clientHeight-26);if(ctx&&gains[ch])gains[ch].gain.gain.value=vol;if(ch==7){aud.volume=vol;document.getElementById('vm').textContent=Math.round(vol*100)+'%';document.getElementById('volDisp').textContent='VOL '+Math.round(vol*100)+'%'}let lab=document.getElementById('v'+ch);if(lab)lab.textContent=vol>0.9?'0dB':vol>0.1?'-'+Math.round((1-vol)*20)+'dB':'-∞';}function st(e){drag=true;sY=(e.touches?e.touches[0].clientY:e.clientY);sB=getB();e.preventDefault()}function en(){drag=false}cap.addEventListener('touchstart',st,{passive:false});cap.addEventListener('mousedown',st);window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('mousemove',mv);window.addEventListener('touchend',en);window.addEventListener('mouseup',en)});
+document.querySelectorAll('.pan-knob').forEach(knob=>{let pan=knob.parentElement,drag=false,sX=0,sL=0;function mv(e){if(!drag)return;let x=(e.touches?e.touches[0].clientX:e.clientX);let d=x-sX;let w=pan.clientWidth-14;let nl=Math.min(w,Math.max(0,sL+d));knob.style.left=nl+'px';let ch=parseInt(pan.dataset.pan);let panVal=(nl/(w/2))-1;if(ctx&&gains[ch])gains[ch].pan.pan.value=Math.max(-1,Math.min(1,panVal));}function st(e){drag=true;sX=(e.touches?e.touches[0].clientX:e.clientX);sL=parseFloat(knob.style.left)||(pan.clientWidth/2-7);e.preventDefault()}function en(){drag=false}knob.addEventListener('touchstart',st,{passive:false});knob.addEventListener('mousedown',st);window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('mousemove',mv);window.addEventListener('touchend',en);window.addEventListener('mouseup',en)});
+window.toggleMute=function(k,ch){let d=k.querySelector('.knob-dot'),on=d.style.background=='red';d.style.background=on?'#B9FF00':'red';k.style.opacity=on?'1':'0.3';if(ctx&&gains[ch])gains[ch].gain.gain.value=on?0.8:0};
+window.startHostMic=async function(){try{initAudio();hostStream=await navigator.mediaDevices.getUserMedia({audio:true});let src=ctx.createMediaStreamSource(hostStream);src.connect(gains[0].gain);alert('✅ HOST MIC LIVE! Main Studio Mic is ON!');document.getElementById('v0').textContent='LIVE 🎤';}catch(e){alert('Mic need HTTPS permission - allow mic')}};
+window.toggleLive=function(){isLive=!isLive;let b=document.getElementById('goLiveBtn'),light=document.getElementById('airlight'),st=document.getElementById('liveStatus');if(isLive){b.textContent='🔴 LIVE';b.style.background='red';b.style.color='#fff';light.classList.add('on');st.textContent='● ON AIR - LISTENERS CONNECTED';st.style.color='#B9FF00';localStorage.setItem('sirdio_live','1');localStorage.setItem('sirdio_live_title',tracks[cur]?.name||'Live Show');}else{b.textContent='OFF AIR';b.style.background='#333';b.style.color='#555';light.classList.remove('on');st.textContent='● OFFLINE';st.style.color='red';localStorage.setItem('sirdio_live','0')}};
+window.allowGuest=function(){localStorage.setItem('sirdio_guest_allowed','1');localStorage.removeItem('sirdio_guest_want_air');document.getElementById('guestAlert').style.display='none';document.getElementById('airlight').classList.remove('on')};
+setInterval(()=>{if(localStorage.getItem('sirdio_guest_want_air')=='1'){document.getElementById('guestAlert').style.display='block';document.getElementById('airlight').classList.add('on')}},700);
+render();
+</script></body></html>
