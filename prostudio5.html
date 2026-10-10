@@ -1,0 +1,25 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>SIRDIO V5 FIXED</title><script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script><style>body{background:#0a0a0f;color:#fff;font-family:sans-serif;padding:10px}header{background:#111;padding:12px;display:flex;justify-content:space-between;flex-wrap:wrap;border-bottom:2px solid #f00}#a{display:none;position:fixed;top:0;left:0;right:0;background:#f00;padding:15px;z-index:9999;text-align:center;font-weight:bold}.vu{height:60px;background:#000;border:1px solid #333;display:flex;gap:2px;padding:5px}.b{flex:1;background:#0f0} button{padding:12px;background:#222;color:#fff;border:1px solid #444;border-radius:8px;margin:4px}.song{padding:10px;background:#111;margin:4px 0;border-radius:6px;cursor:pointer}.song.active{background:#f003}</style></head><body>
+<div id="a">🔴 GUEST <span id="gn"></span> CALLING <button onclick="this.parentElement.style.display='none'; client.publish('sirdio/host/guest','ACCEPTED')">ACCEPT</button> <button onclick="this.parentElement.style.display='none'">REJECT</button></div>
+<header><b>🔥 SIRDIO V5 FIXED</b><div><span id="cs">🟡 Connecting...</span> | 👥 <b id="lc">0</b></div></header>
+<div class="vu" id="vu"></div>
+<audio id="p" controls style="width:100%;margin:10px 0"></audio>
+<div><input type="file" id="f" accept="audio/*" multiple><button onclick="document.getElementById('f').click()">ADD MP3</button> <button onclick="pp()">PLAY/PAUSE</button> <button onclick="nt()">NEXT</button> <button id="mb" onclick="tm()">MIC OFF</button></div>
+<div id="pl" style="margin-top:10px"></div>
+<div style="margin-top:15px;background:#111;padding:10px">Now: <b id="np" style="color:#f00">Nothing</b></div>
+<script>
+let pl=[],ci=0,ms=null;
+const player=document.getElementById('p');
+const vu=document.getElementById('vu');
+for(let i=0;i<20;i++){let d=document.createElement('div');d.className='b';d.style.height='10%';vu.appendChild(d);}
+setInterval(()=>{if(!player.paused){for(let c of vu.children)c.style.height=(Math.random()*80+10)+'%';}},150);
+document.getElementById('f').onchange=e=>{for(let file of e.target.files){let u=URL.createObjectURL(file);pl.push({n:file.name,u});let d=document.createElement('div');d.className='song';d.textContent='🎵 '+file.name;d.onclick=()=>{ci=pl.findIndex(x=>x.n===file.name);play();};document.getElementById('pl').appendChild(d);}};
+function play(){if(!pl[ci])return;player.src=pl[ci].u;player.play();document.getElementById('np').textContent=pl[ci].n;try{client.publish('sirdio/host/nowplaying',pl[ci].n);}catch(e){} document.querySelectorAll('.song').forEach((s,i)=>s.classList.toggle('active',i===ci));}
+function pp(){if(player.paused)player.play();else player.pause();}
+function nt(){ci++;if(ci>=pl.length)ci=0;play();}
+async function tm(){if(ms){ms.getTracks().forEach(t=>t.stop());ms=null;document.getElementById('mb').textContent='MIC OFF';return;}try{ms=await navigator.mediaDevices.getUserMedia({audio:true});document.getElementById('mb').textContent='🔴 MIC ON';}catch(e){alert(e.message);}}
+// MQTT
+const client=mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+client.on('connect',()=>{document.getElementById('cs').textContent='🟢 CONNECTED';client.subscribe('sirdio/guest/request');client.subscribe('sirdio/listener/join');});
+client.on('message',(t,m)=>{let v=m.toString();if(t==='sirdio/guest/request'){document.getElementById('gn').textContent=v;document.getElementById('a').style.display='block';}if(t==='sirdio/listener/join'){let e=document.getElementById('lc');e.textContent=parseInt(e.textContent)+1;}});
+player.onended=()=>{nt();};
+</script></body></html>
