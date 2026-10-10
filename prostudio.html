@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIRDIO V5 FULL - CONNECTED</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden}
+#guestAlert{display:none;position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#ff0033,#ff6600);padding:18px;z-index:99999;text-align:center;font-size:22px;font-weight:bold;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.7}}
+header{background:#111;display:flex;justify-content:space-between;padding:12px 15px;border-bottom:2px solid #ff0033;flex-wrap:wrap;gap:10px}
+.stat{background:#1a1a1a;padding:6px 12px;border-radius:20px;font-size:13px;border:1px solid #333}
+#connOk{color:#0f0}#connBad{color:#fa0}
+.vuBox{background:#000;border:1px solid #222;height:70px;display:flex;align-items:end;gap:2px;padding:5px;margin:10px;border-radius:8px}
+.bar{flex:1;background:linear-gradient(to top,#0f0,#ff0,#f00);border-radius:2px 2px 0 0;transition:height 0.1s}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
+.faderBox{background:#15151c;border:1px solid #222;border-radius:10px;padding:12px}
+.faderBox h4{font-size:12px;color:#888;margin-bottom:8px}
+input[type=range]{width:100%;accent-color:#ff0033}
+button{padding:12px 8px;background:#222;color:#fff;border:1px solid #333;border-radius:8px;font-weight:bold;cursor:pointer}
+button:active{background:#ff0033}
+.playlist{background:#111;margin:10px;border-radius:10px;max-height:300px;overflow-y:auto;border:1px solid #222}
+.song{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #1a1a1a;cursor:pointer}
+.song:hover{background:#1a1a1a}
+.song.active{background:#ff00331a;border-left:3px solid #ff0033}
+#player{width:100%;margin:10px 0}
+</style>
+</head>
+<body>
+
+<div id="guestAlert">
+🔴 <span id="guestName">GUEST</span> IS CALLING!
+<button onclick="acceptGuest()" style="background:#fff;color:#f00;padding:10px 20px;margin-left:15px;border-radius:20px">ACCEPT</button>
+<button onclick="document.getElementById('guestAlert').style.display='none'" style="background:#000;color:#fff;padding:10px 15px;border-radius:20px">REJECT</button>
+</div>
+
+<header>
+<div style="font-weight:bold;font-size:18px">🔥 SIRDIO V5 CONNECTED</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div class="stat" id="connStatus">🟡 Connecting...</div>
+<div class="stat">👥 Listeners: <b id="listenCount">0</b></div>
+<div class="stat">🎤 Guest: <b id="guestStat">None</b></div>
+</div>
+</header>
+
+<div class="vuBox" id="vu"></div>
+
+<audio id="player" controls></audio>
+
+<div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap">
+<input type="file" id="fileInput" accept="audio/*" multiple style="flex:1;background:#111;padding:10px;border-radius:8px;border:1px solid #333">
+<button onclick="document.getElementById('fileInput').click()">➕ ADD MP3</button>
+<button onclick="clearAll()">🗑️ CLEAR</button>
+</div>
+
+<div class="controls">
+<div class="faderBox"><h4>🎵 TRACK VOL</h4><input type="range" id="volTrack" min="0" max="100" value="80"><div id="volTrackVal">80%</div></div>
+<div class="faderBox"><h4>🎙️ MIC VOL</h4><input type="range" id="volMic" min="0" max="100" value="80"><div id="volMicVal">80%</div></div>
+<div class="faderBox"><h4>🔊 MASTER</h4><input type="range" id="volMaster" min="0" max="100" value="90"><div id="volMasterVal">90%</div></div>
+<div class="faderBox">
+<h4>🎛️ CONTROLS</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<button onclick="playPause()">▶️/⏸️</button>
+<button onclick="nextTrack()">⏭️ NEXT</button>
+<button id="micBtn" onclick="toggleMic()">🎙️ MIC OFF</button>
+<button onclick="autoPlayToggle()" id="autoBtn">🔁 AUTO: ON</button>
+</div>
+</div>
+</div>
+
+<div class="playlist" id="playlist"><div style="padding:20px;text-align:center;color:#666">No songs - Add MP3s! They will SAVE after refresh!</div></div>
+
+<div style="padding:15px;background:#111;margin:10px;border-radius:10px;border:1px solid #222">
+<div>Now Playing: <b id="nowPlaying" style="color:#ff0033">Nothing</b></div>
+<div style="font-size:12px;color:#666;margin-top:8px">Links: Listener: lissirdio.html | Guest: guestmic.html | MQTT: broker.hivemq.com</div>
+</div>
+
+<script>
+/* ========== FULL LOGIC ========== */
+let playlist=[], currentIndex=0, isAuto=true, micStream=null, audioCtx, analyser;
+const player=document.getElementById('player');
+const fileInput=document.getElementById('fileInput');
+
+// VU
+const vuBox=document.getElementById('vu');
+let bars=[];
+for(let i=0;i<24;i++){let b=document.createElement('div');b.className='bar';b.style.height='8%';vuBox.appendChild(b);bars.push(b);}
+
+// STORAGE - IndexedDB for MP3 persistence
+let db;
+let dbReq=indexedDB.open('SirdioV5',1);
+dbReq.onupgradeneeded=e=>{let d=e.target.result; d.createObjectStore('songs',{keyPath:'id'});};
+dbReq.onsuccess=e=>{db=e.target.result; loadSongsFromDB();};
+dbReq.onerror=()=>{console.log('DB fail');};
+
+function saveSongToDB(file){
+let reader=new FileReader();
+reader.onload=e=>{
+let trans=db.transaction('songs','readwrite');
+trans.objectStore('songs').put({id:file.name+file.size, name:file.name, data:e.target.result, size:file.size});
+};
+reader.readAsArrayBuffer(file);
+}
+function loadSongsFromDB(){
+if(!db)return;
+let trans=db.transaction('songs','readonly');
+let store=trans.objectStore('songs');
+let req=store.getAll();
+req.onsuccess=()=>{
+req.result.forEach(s=>{
+let blob=new Blob([s.data]);
+let url=URL.createObjectURL(blob);
+addToPlaylist(s.name,url,false);
+});
+};
+}
+
+function addToPlaylist(name,url,save=true){
+if(playlist.find(p=>p.name===name))return;
+playlist.push({name,url});
+let div=document.createElement('div');
+div.className='song';
+div.id='song-'+playlist.length;
+div.innerHTML=`<span>🎵 ${name}</span><span>▶️</span>`;
+div.onclick=()=>{playIndex(playlist.findIndex(p=>p.name===name));};
+document.getElementById('playlist').appendChild(div);
+if(document.getElementById('playlist').children[0] && document.getElementById('playlist').children[0].textContent.includes('No songs')){document.getElementById('playlist').innerHTML=''; document.getElementById('playlist').appendChild(div);}
+}
+
+fileInput.onchange=e=>{
+let files=e.target.files;
+for(let f of files){
+let url=URL.createObjectURL(f);
+addToPlaylist(f.name,url,true);
+if(db)saveSongToDB(f);
+}
+};
+
+function playIndex(i){
+if(i<0||i>=playlist.length)return;
+currentIndex=i;
+player.src=playlist[i].url;
+player.volume=document.getElementById('volTrack').value/100 * document.getElementById('volMaster').value/100;
+player.play();
+document.querySelectorAll('.song').forEach((el,idx)=>{el.classList.toggle('active',idx===i);});
+document.getElementById('nowPlaying').textContent=playlist[i].name;
+publishNowPlaying(playlist[i].name);
+}
+
+function playPause(){if(player.paused){player.play();}else{player.pause();}}
+function nextTrack(){let n=currentIndex+1; if(n>=playlist.length)n=0; playIndex(n);}
+function clearAll(){
+if(!confirm('Clear all songs?'))return;
+if(db){db.transaction('songs','readwrite').objectStore('songs').clear();}
+playlist=[]; document.getElementById('playlist').innerHTML='<div style="padding:20px;text-align:center;color:#666">Cleared - Add MP3s!</div>';
+}
+
+player.onended=()=>{if(isAuto)nextTrack();};
+function autoPlayToggle(){isAuto=!isAuto; document.getElementById('autoBtn').textContent='🔁 AUTO: '+(isAuto?'ON':'OFF');}
+
+// Volumes
+document.getElementById('volTrack').oninput=e=>{document.getElementById('volTrackVal').textContent=e.target.value+'%'; player.volume=e.target.value/100 * document.getElementById('volMaster').value/100;};
+document.getElementById('volMaster').oninput=e=>{document.getElementById('volMasterVal').textContent=e.target.value+'%'; player.volume=document.getElementById('volTrack').value/100 * e.target.value/100;};
+document.getElementById('volMic').oninput=e=>{document.getElementById('volMicVal').textContent=e.target.value+'%';};
+
+// MIC
+async function toggleMic(){
+if(micStream){
+micStream.getTracks().forEach(t=>t.stop()); micStream=null;
+document.getElementById('micBtn').textContent='🎙️ MIC OFF'; document.getElementById('micBtn').style.background='#222';
+return;
+}
+try{
+micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+document.getElementById('micBtn').textContent='🔴 MIC ON'; document.getElementById('micBtn').style.background='#ff0033';
+if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)(); analyser=audioCtx.createAnalyser(); let src=audioCtx.createMediaStreamSource(micStream); src.connect(analyser); animateVU();}
+}catch(err){alert('Mic fail: '+err.message);}
+}
+
+function animateVU(){
+if(!analyser)return;
+let data=new Uint8Array(analyser.frequencyBinCount);
+function loop(){
+if(!analyser)return;
+analyser.getByteFrequencyData(data);
+for(let i=0;i<bars.length;i++){
+let v=data[i*2]||0;
+bars[i].style.height=Math.max(8, v/2)+'%';
+bars[i].style.opacity=0.5+v/255;
+}
+requestAnimationFrame(loop);
+}
+loop();
+}
+
+// Simple VU for music
+setInterval(()=>{
+if(player &&!player.paused &&!analyser){
+for(let b of bars){b.style.height=(Math.random()*80+10)+'%';}
+}
+},120);
+
+/* ========== MQTT CONNECTED ========== */
+const mqttClient=mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+mqttClient.on('connect',()=>{
+document.getElementById('connStatus').innerHTML='🟢 <span id="connOk">CONNECTED</span>';
+mqttClient.subscribe('sirdio/guest/request');
+mqttClient.subscribe('sirdio/listener/join');
+mqttClient.subscribe('sirdio/listener/left');
+console.log('MQTT CONNECTED');
+});
+mqttClient.on('error',()=>{document.getElementById('connStatus').innerHTML='🔴 Reconnecting...';});
+mqttClient.on('message',(topic,msg)=>{
+let m=msg.toString();
+if(topic==='sirdio/guest/request'){
+document.getElementById('guestAlert').style.display='block';
+document.getElementById('guestName').textContent=m;
+document.getElementById('guestStat').textContent=m+' CALLING';
+new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(()=>{});
+}
+if(topic==='sirdio/listener/join'){
+let c=document.getElementById('listenCount');
+c.textContent=parseInt(c.textContent)+1;
+}
+});
+
+function publishNowPlaying(name){try{mqttClient.publish('sirdio/host/nowplaying', name);}catch(e){}}
+function acceptGuest(){
+document.getElementById('guestAlert').style.display='none';
+mqttClient.publish('sirdio/host/guest','ACCEPTED');
+document.getElementById('guestStat').textContent='Accepted';
+alert('Guest Accepted! Tell them to start talking');
+}
+</script>
+</body>
+</html>
