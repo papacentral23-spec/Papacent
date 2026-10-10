@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SIRDIO GUEST MIC V7</title><script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script><style>body{background:#0a0a0f;color:#fff;font-family:sans-serif;text-align:center;padding:15px}header{border-bottom:3px solid #d4af37;padding:12px}.panel{background:linear-gradient(135deg,#1a1a1a,#2a2110);border:2px solid #d4af37;border-radius:16px;padding:20px;margin:15px 0}button{padding:14px 20px;margin:6px;border-radius:10px;border:1px solid #555;background:#222;color:#fff;font-weight:bold}button.active{background:#d4af37;color:#000}.vu{display:flex;gap:2px;height:45px;background:#000;padding:4px}.b{flex:1;background:#d4af37;height:10%}input{padding:12px;width:70%;border-radius:8px;border:1px solid #555;background:#111;color:#fff;text-align:center}</style></head><body>
+<header>🎤 SIRDIO GUEST MIC V7 - ABBEY ROAD | <span id="cs">🟡</span></header>
+<div class="vu" id="vu"></div>
+<div class="panel">
+<input id="name" placeholder="e.g. MAZ from Kumasi" value="">
+<br><br>
+<button onclick="requestMic()">🔴 REQUEST TO TALK</button>
+<div id="status" style="margin:12px;color:#aaa">Not requested</div>
+<button id="micBtn" onclick="toggleMic()" style="display:none">🎤 MIC OFF</button>
+</div>
+<script>
+let vu=document.getElementById('vu');for(let i=0;i<18;i++){let d=document.createElement('div');d.className='b';vu.appendChild(d);}setInterval(()=>{for(let c of vu.children)c.style.height=(Math.random()*70+10)+'%';},130);
+let client=null,brokers=['wss://broker.hivemq.com:8884/mqtt','wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8000/mqtt'],idx=0,ms=null,audioCtx=null;
+function tryConn(){if(idx>=brokers.length){cs.textContent='🔴 Offline';return;}let c=mqtt.connect(brokers[idx],{keepalive:30,connectTimeout:5000});c.on('connect',()=>{client=c;cs.textContent='🟢 CONNECTED';c.subscribe('sirdio/host/guest');c.on('message',(t,m)=>{if(m.toString()=='YES'){status.innerHTML='✅ HOST ACCEPTED! You can talk';micBtn.style.display='inline-block';}});});c.on('error',()=>{idx++;tryConn();});c.on('close',()=>{if(!client||!client.connected){idx++;tryConn();}});}tryConn();
+function requestMic(){let n=name.value||'Guest';if(client){client.publish('sirdio/guest/request',n);status.textContent='🟡 Request sent - waiting...';}}
+async function toggleMic(){if(ms){ms.getTracks().forEach(t=>t.stop());ms=null;micBtn.textContent='🎤 MIC OFF';micBtn.classList.remove('active');return;}try{ms=await navigator.mediaDevices.getUserMedia({audio:true});let ac=new AudioContext(),src=ac.createMediaStreamSource(ms);src.connect(ac.destination);micBtn.textContent='🔴 MIC ON - ABBEY ROAD 🔥';micBtn.classList.add('active');}catch(e){alert(e.message);}}
+</script></body></html>
